@@ -2,4 +2,4 @@
 
 Connect NAMD and Grimme's xtb program
 
-See namd-xtb.py for detail
+See namd-xtb.py for details
