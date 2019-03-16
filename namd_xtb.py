@@ -186,7 +186,6 @@ def run_qmmm(directory, stdoutput):
     xtbrestart = path + r'/xtbrestart'
     namdoutput = path + r'/' + base + '.result'
     convert_input(directory, xtbxyz, xtbpcfile)
-    subprocess.call([XTBDIR, xtbxyz, '-grad', '-charge', str(QMCHARGE[qmpart])],
                      stdout = stdoutput)
     convert_output(xtbcharges, xtbgrad, namdoutput)
     # otherwise xtb will restart a run
