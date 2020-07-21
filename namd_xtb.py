@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 """
-NAMD-xtb interface v0.1 beta
-
+NAMD-xtb interface v0.11 beta
 by Haohao Fu
 fhh2626_at_gmail.com
 """
@@ -16,7 +15,6 @@ Readme:
     
 Requirement:
     Python 3 and numpy (I think Python 2.7+ is also possible)
-
 Usage:
     In NAMD config file:
         qmSoftware     "custom"
@@ -24,13 +22,15 @@ Usage:
         
         QMElecEmbed, qmConfigLine, qmMult, qmCharge are useless.
     
-    Then set XTBDIR and QMCHARGE below.
+    Then set XTBDIR, QMCHARGE and GFNVER below.
 """
 
 # the complete directory of xtb program
 XTBDIR = r'/home/chinfo/software/chem/xtb/xtb'
 # the charge of each independent QM part
-QMCHARGE = [0]
+QMCHARGE = [1]
+# the version of gfn
+GFNVER = 2
 
 import os
 import subprocess
@@ -82,7 +82,7 @@ def read_namdinput(file):
                 
     return (element, coor, pcharge)
 
-def write_xtbinput(xyzfile, pchargefile, element, coor, pcharge):
+def write_xtbinput(xyzfile, pchargefile,element, coor, pcharge):
     ''' write xtb qmmm input file based on:
         qm atom -- element (python array)
         atomic coordinates -- coor (n * 3D numpy array)
@@ -107,6 +107,7 @@ def write_xtbinput(xyzfile, pchargefile, element, coor, pcharge):
                      pcharge[i,1], 
                      pcharge[i,2],
                      pcharge[i,3]))
+    
             
 def convert_input(namdinput, xtbinput_xyz, xtbinput_pc):
     ''' convert namdinput to xtb input '''
@@ -169,7 +170,7 @@ def convert_output(xtboutput_charge, xtboutput_grad, namdoutput):
     energy, info = read_xtboutput(xtboutput_charge, xtboutput_grad)
     write_namdoutput(namdoutput, energy, info)
 
-def run_qmmm(directory, stdoutput):
+def run_qmmm(directory, outputRedirect):
     ''' the main function called by namd every step,
         the complete directory of the input file -- directory
         a file to record useless information to prevent from
@@ -185,9 +186,10 @@ def run_qmmm(directory, stdoutput):
     xtbgrad = path + r'/gradient'
     xtbrestart = path + r'/xtbrestart'
     namdoutput = path + r'/' + base + '.result'
+    energy = path + r'/energy'
     convert_input(directory, xtbxyz, xtbpcfile)
-    subprocess.call([XTBDIR, xtbxyz, '--grad', '--chrg', str(QMCHARGE[qmpart])],
-                     stdout = stdoutput)
+    subprocess.call([XTBDIR, xtbxyz, '--grad', '--chrg', str(QMCHARGE[qmpart]), '--gfn', str(GFNVER)],
+                    stdout = outputRedirect, stderr = outputRedirect)
     convert_output(xtbcharges, xtbgrad, namdoutput)
     # otherwise xtb will restart a run
     os.remove(xtbxyz)
@@ -195,8 +197,8 @@ def run_qmmm(directory, stdoutput):
     os.remove(xtbcharges)
     os.remove(xtbgrad)
     os.remove(xtbrestart)
-    
+     
 if __name__ == '__main__':
-    useless = open(os.path.dirname(sys.argv[1]) + r'/useless.log', 'w')
+    useless = open(os.devnull, 'w')
     run_qmmm(sys.argv[1], useless)
     useless.close()
